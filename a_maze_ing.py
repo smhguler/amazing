@@ -1,43 +1,45 @@
 width: int = 20
 height: int = 15
-NORTH:int=1
-EAST: int=2
-SOUTH: int=4
-WEST: int=8
+NORTH: int = 1
+EAST: int = 2
+SOUTH: int = 4
+WEST: int = 8
 
-ALL_WALLS:int=NORTH+EAST+SOUTH+WEST
+ALL_WALLS: int = NORTH+EAST+SOUTH+WEST
 
 
-grid: list[list[int]]=[]
+grid: list[list[int]] = []
 for sayi in range(height):
-    row: list[int]=[ALL_WALLS]*width
+    row: list[int] = [ALL_WALLS]*width
     grid.append(row)
 
-def open_wall(cell:int,wall:int)->int:
-    return cell&~wall
 
+def open_wall(cell: int, wall: int) -> int:
+    return cell & ~ wall
 
 
 def open_east_passage(grid: list[list[int]], x: int, y: int) -> None:
     if x + 1 < len(grid[0]):
-        grid[y][x]=open_wall(grid[y][x],EAST)
-        grid[y][x+1]=open_wall(grid[y][x+1],WEST)
+        grid[y][x] = open_wall(grid[y][x], EAST)
+        grid[y][x+1] = open_wall(grid[y][x+1], WEST)
+
 
 def open_south_passage(grid: list[list[int]], x: int, y: int) -> None:
     if y + 1 < len(grid):
-        grid[y][x]=open_wall(grid[y][x],SOUTH)
-        grid[y+1][x]=open_wall(grid[y+1][x],NORTH)
+        grid[y][x] = open_wall(grid[y][x], SOUTH)
+        grid[y+1][x] = open_wall(grid[y+1][x], NORTH)
+
 
 for y in range(height):
     for x in range(width-1):
-        open_east_passage(grid,x,y)
+        open_east_passage(grid, x, y)
 
 for y in range(height-1):
-    open_south_passage(grid,0,y)
+    open_south_passage(grid, 0, y)
 
 with open("maze.txt", "w", encoding="utf-8") as dosya:
     for row in grid:
-        metin:str=""
+        metin: str = ""
         for cell in row:
-            metin += format(cell, "X")    
+            metin += format(cell, "X")
         dosya.write(metin + "\n")
