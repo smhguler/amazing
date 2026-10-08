@@ -9,7 +9,7 @@ ALL_WALLS: int = NORTH+EAST+SOUTH+WEST
 
 
 grid: list[list[int]] = []
-for sayi in range(height):
+for _ in range(height):
     row: list[int] = [ALL_WALLS]*width
     grid.append(row)
 
@@ -37,9 +37,12 @@ for y in range(height):
 for y in range(height-1):
     open_south_passage(grid, 0, y)
 
-with open("maze.txt", "w", encoding="utf-8") as dosya:
-    for row in grid:
-        metin: str = ""
-        for cell in row:
-            metin += format(cell, "X")
-        dosya.write(metin + "\n")
+with open("maze.txt", "w", encoding="utf-8") as file:
+    try: 
+        for row in grid:
+            text: str = ""
+            for cell in row:
+                text += format(cell, "X")
+            file.write(text + "\n")
+    except OSError as error:
+        print(f"An Error:{error} Has accured in maze.txt ")

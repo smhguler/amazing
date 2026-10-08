@@ -1,0 +1,13 @@
+# File that tells Git which files to ignore
+
+# Virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+
+# Mypy cache
+.mypy_cache/
+
+# macOS system files
+.DS_Store
