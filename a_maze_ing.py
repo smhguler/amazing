@@ -1,37 +1,40 @@
 import sys
 
 if len(sys.argv) != 2:
-    #hata mesajı gelecek!
+    print("Kullanım: python3 a_maze_ing.py config.txt")
     sys.exit(1)
 
-elif len(sys.argv) == 2:
-    config_file = sys.argv[1]
+config_file = sys.argv[1]
+clear_format_commands = []
 
-    clear_format_commands = []
-    try:
-        with open(config_file,'r') as config:
-            config_txt = config.read()
-            config_lines = config_txt.splitlines()
-            #satırları temizleme 
-            for line in config_lines:
-                line = line.strip()
-                if line == "":
-                    continue
-                if line.startswith("#"):
-                    continue
-                clear_format_commands.append(line)
+try:
+    with open(config_file, "r") as config:
+        config_txt = config.read()
+    config_lines = config_txt.splitlines()
+    for line in config_lines:
+        line = line.strip()
+        if line == "":
+            continue
+        if line.startswith("#"):
+            continue
+        clear_format_commands.append(line)
 
-            for line in clear_format_commands:
-                commands_varables_only = line.split("=", 1)
-            print(commands_varables_only)
-    except:
-        #gecici hata yakalama
-        sys.exit(1)
+    for line in clear_format_commands:
+        command = line.split("=", 1)
+        #burda artık sadece txt içinde olan değerlerin sağ tarafları duruyo
 
+    width = commands_varables_only[0]
+    height = commands_varables_only[1]
+    entry = commands_varables_only[2]
+    exit = commands_varables_only[3]
+    output_file = commands_varables_only[4]
+    perfect = commands_varables_only[5]
+
+
+except OSError as error:
+    print(f"Hata: {error}")
+    sys.exit(1)
         
-
-    width: int = 20
-    height: int = 15
     NORTH: int = 1
     EAST: int = 2
     SOUTH: int = 4
