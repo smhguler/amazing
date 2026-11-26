@@ -11,7 +11,10 @@ DIRECTIONS = (
     ("S", 0, 1, 4, 1),
     ("W", -1, 0, 8, 2),
 )
-MAX_CELLS = 100_000
+MAX_CELLS = 100_000  # Cap the size of the in-memory grid and searches.
+MAX_BRAID_ATTEMPTS = 32  # Limit retries when a tree cannot be braided.
+MIN_LOOPS = 2  # A playable board needs at least two independent loops.
+MAX_DEAD_ENDS = 2  # The subject tolerates a couple of avoidable dead ends.
 ALL_WALLS = 15
 PATTERN = (
     "#.#.###",
@@ -68,7 +71,7 @@ class MazeGenerator:
             raise ValueError("ENTRY and EXIT must be inside the maze.")
         if self.entry == self.exit:
             raise ValueError("ENTRY and EXIT must differ.")
-        if not perfect and (width - 1) * (height - 1) < 2:
+        if not perfect and (width - 1) * (height - 1) < MIN_LOOPS:
             raise ValueError("This size cannot support two loops.")
         self.perfect = perfect
         self.seed = seed
@@ -83,8 +86,8 @@ class MazeGenerator:
             for x in range(self.width)
             if (x, y) not in blocked
         ]
-        # Retry a different tree when braiding cannot reach the requirements.
-        for _ in range(1 if self.perfect else 32):
+        attempts = 1 if self.perfect else MAX_BRAID_ATTEMPTS
+        for _ in range(attempts):
             walls = [[ALL_WALLS] * self.width for _ in range(self.height)]
             self._carve_tree(walls, blocked, rng)
             if self.perfect or self._braid(walls, cells, blocked, rng):
@@ -172,28 +175,34 @@ class MazeGenerator:
                 continue
             options = list(DIRECTIONS)
             rng.shuffle(options)
-            options.sort(key=lambda d: (
-                0 <= x + d[1] < self.width
-                and 0 <= y + d[2] < self.height
-                and walls[y + d[2]][x + d[1]].bit_count() == 3
-            ), reverse=True)
+            options.sort(
+                key=lambda move: self._is_dead_end(
+                    walls, (x + move[1], y + move[2]),
+                ),
+                reverse=True,
+            )
             for _, dx, dy, wall, opposite in options:
                 if self._try_open(walls, blocked, (x, y), dx, dy,
                                   wall, opposite):
                     loops += 1
                     break
-        if self._avoidable_dead_ends(walls, cells, blocked) > 2:
+        if self._avoidable_dead_ends(walls, cells, blocked) > MAX_DEAD_ENDS:
             return False
         for x, y in cells:
-            if loops >= 2:
+            if loops >= MIN_LOOPS:
                 return True
             for _, dx, dy, wall, opposite in DIRECTIONS[1:3]:
                 if self._try_open(walls, blocked, (x, y), dx, dy,
                                   wall, opposite):
                     loops += 1
-                    if loops >= 2:
+                    if loops >= MIN_LOOPS:
                         return True
         return False
+
+    def _is_dead_end(self, walls: list[list[int]], cell: Point) -> bool:
+        """Check whether an in-bounds cell has exactly one open side."""
+        x, y = cell
+        return self._inside(cell) and walls[y][x].bit_count() == 3
 
     def _avoidable_dead_ends(
         self,
@@ -230,15 +239,20 @@ class MazeGenerator:
             return False
         walls[y][x] &= ~wall
         walls[ny][nx] &= ~opposite
-        for top in range(max(0, max(y, ny) - 2),
-                         min(y, ny, self.height - 3) + 1):
-            for left in range(max(0, max(x, nx) - 2),
-                              min(x, nx, self.width - 3) + 1):
+        for top in self._square_starts(y, ny, self.height):
+            for left in self._square_starts(x, nx, self.width):
                 if self._square_is_open(walls, left, top):
                     walls[y][x] |= wall
                     walls[ny][nx] |= opposite
                     return False
         return True
+
+    @staticmethod
+    def _square_starts(first: int, second: int, size: int) -> range:
+        """List 3-cell window starts that contain both coordinates."""
+        start = max(0, max(first, second) - 2)
+        stop = min(first, second, size - 3) + 1
+        return range(start, stop)
 
     @staticmethod
     def _square_is_open(walls: list[list[int]], x: int, y: int) -> bool:

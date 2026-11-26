@@ -8,6 +8,9 @@ from mazegen import MazeGenerator, Point
 
 REQUIRED = {"WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"}
 OPTIONAL = {"DISPLAY", "SEED"}
+MAX_CONFIG_CHARS = 32 * 1024  # Bound the amount of input read at startup.
+MAX_INTEGER_DIGITS = 20  # Enough for any unsigned 64-bit seed.
+MAX_OUTPUT_NAME_LENGTH = 128  # Limit the generated file name.
 
 
 @dataclass(frozen=True)
@@ -34,8 +37,8 @@ class Config:
 def read_config(path: Path) -> Config:
     """Read UTF-8 KEY=VALUE lines and reject invalid configurations."""
     with path.open("r", encoding="utf-8-sig") as source:
-        content = source.read(32769)
-    if len(content) > 32768:
+        content = source.read(MAX_CONFIG_CHARS + 1)
+    if len(content) > MAX_CONFIG_CHARS:
         raise ValueError("Configuration file is too large.")
     values: dict[str, str] = {}
     for number, line in enumerate(content.splitlines(), 1):
@@ -61,7 +64,9 @@ def read_config(path: Path) -> Config:
     if display not in ("MLX", "NONE"):
         raise ValueError("DISPLAY must be MLX or NONE.")
     filename = values["OUTPUT_FILE"]
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", filename):
+    if len(filename) > MAX_OUTPUT_NAME_LENGTH:
+        raise ValueError("OUTPUT_FILE is too long.")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", filename):
         raise ValueError("OUTPUT_FILE must be a file name without a path.")
     if filename.endswith("."):
         raise ValueError("OUTPUT_FILE cannot end with a period.")
@@ -84,7 +89,7 @@ def read_config(path: Path) -> Config:
 
 def _integer(name: str, value: str) -> int:
     """Read a bounded unsigned decimal integer."""
-    if not re.fullmatch(r"[0-9]{1,20}", value):
+    if len(value) > MAX_INTEGER_DIGITS or not re.fullmatch(r"[0-9]+", value):
         raise ValueError(f"{name} must be a non-negative integer.")
     return int(value)
 

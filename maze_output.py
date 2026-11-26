@@ -5,11 +5,11 @@ import re
 
 from mazegen import Maze
 
+MAX_MAZE_FILE_BYTES = 400_004  # Allow room for the grid, path and footer.
+
 
 def write_maze(maze: Maze, destination: Path) -> None:
     """Write LF-delimited output, protecting other existing files."""
-    if destination.parent.resolve() != Path.cwd().resolve():
-        raise ValueError("The output must be in the working directory.")
     if destination.is_symlink():
         raise ValueError("The output cannot be a symbolic link.")
     if destination.exists() and not _is_maze_file(destination):
@@ -25,22 +25,22 @@ def write_maze(maze: Maze, destination: Path) -> None:
 
 
 def _is_maze_file(path: Path) -> bool:
-    """Recognize output files, including the team's earlier hex-only maze."""
-    if not path.is_file() or path.stat().st_size > 400_004:
+    """Check whether an existing file has the maze output format."""
+    if not path.is_file() or path.stat().st_size > MAX_MAZE_FILE_BYTES:
         return False
     try:
-        lines = path.read_text(encoding="ascii").splitlines()
+        grid, separator, metadata = path.read_text(
+            encoding="ascii",
+        ).partition("\n\n")
     except UnicodeError:
         return False
-    split = lines.index("") if "" in lines else len(lines)
-    rows, footer = lines[:split], lines[split + 1:]
-    if not rows or not all(
+    rows = grid.splitlines()
+    footer = metadata.splitlines()
+    if not separator or not rows or not all(
         len(row) == len(rows[0]) and re.fullmatch(r"[0-9A-F]+", row)
         for row in rows
     ):
         return False
-    if split == len(lines):
-        return True
     return (
         len(footer) == 3
         and re.fullmatch(r"\d+,\d+", footer[0]) is not None

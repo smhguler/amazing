@@ -21,6 +21,25 @@ MARGIN = 22
 HEADER = 50
 FOOTER = 58
 
+# Window sizes leave room for the controls and fit common desktop displays.
+MIN_WINDOW_WIDTH = 540
+MAX_WINDOW_WIDTH = 1060
+MIN_WINDOW_HEIGHT = 260
+MAX_WINDOW_HEIGHT = 770
+SCREEN_MARGIN_X = 80
+SCREEN_MARGIN_Y = 100
+MIN_TILE_SIZE = 8
+MAX_TILE_SIZE = 32
+
+# X11 key codes and the window manager's close message.
+KEY_ESC = 65307
+KEY_LEFT = 65361
+KEY_UP = 65362
+KEY_RIGHT = 65363
+KEY_DOWN = 65364
+X11_CLIENT_MESSAGE = 33
+PAN_STEP = 4  # Cells moved with each arrow-key press.
+
 
 def show_maze(maze: Maze, regenerate: Callable[[], Maze]) -> None:
     """Open the MLX window and wait until the user closes it."""
@@ -86,16 +105,25 @@ class Viewer:
         self.columns = len(maze.walls[0])
         self.rows = len(maze.walls)
         _, screen_width, screen_height = mlx.mlx_get_screen_size(context)
-        max_width = max(540, min(1060, screen_width - 80))
-        max_height = max(260, min(770, screen_height - 100))
+        max_width = max(
+            MIN_WINDOW_WIDTH, min(MAX_WINDOW_WIDTH,
+                                  screen_width - SCREEN_MARGIN_X),
+        )
+        max_height = max(
+            MIN_WINDOW_HEIGHT, min(MAX_WINDOW_HEIGHT,
+                                   screen_height - SCREEN_MARGIN_Y),
+        )
         area_width = max_width - 2 * MARGIN - 2
         area_height = max_height - HEADER - FOOTER - 2
-        self.tile = max(8, min(
-            32, area_width // self.columns, area_height // self.rows,
+        self.tile = max(MIN_TILE_SIZE, min(
+            MAX_TILE_SIZE, area_width // self.columns,
+            area_height // self.rows,
         ))
         self.visible_x = min(self.columns, area_width // self.tile)
         self.visible_y = min(self.rows, area_height // self.tile)
-        self.width = max(540, self.visible_x * self.tile + 2 * MARGIN + 2)
+        self.width = max(
+            MIN_WINDOW_WIDTH, self.visible_x * self.tile + 2 * MARGIN + 2,
+        )
         self.height = self.visible_y * self.tile + HEADER + FOOTER + 2
         self.origin_x = (self.width - self.visible_x * self.tile) // 2 - 1
         self.left = min(
@@ -128,7 +156,9 @@ class Viewer:
                 self.canvas = Canvas(data, stride, fmt)
                 self.mlx.mlx_key_hook(self.window, self._key, None)
                 self.mlx.mlx_expose_hook(self.window, self._present, None)
-                self.mlx.mlx_hook(self.window, 33, 0, self._close, None)
+                self.mlx.mlx_hook(
+                    self.window, X11_CLIENT_MESSAGE, 0, self._close, None,
+                )
                 self._draw()
                 self.mlx.mlx_loop(self.context)
             finally:
@@ -142,7 +172,7 @@ class Viewer:
 
     def _key(self, key: int, _: object) -> None:
         """Regenerate, toggle the route, change color, pan or quit."""
-        if key in (65307, ord("q"), ord("Q")):
+        if key in (KEY_ESC, ord("q"), ord("Q")):
             self._close(None)
             return
         if key in (ord("r"), ord("R")):
@@ -155,14 +185,16 @@ class Viewer:
             self.show_solution = not self.show_solution
         elif key in (ord("c"), ord("C")):
             self.color = (self.color + 1) % len(PALETTE)
-        elif key in (65361, 65362, 65363, 65364):
+        elif key in (KEY_LEFT, KEY_UP, KEY_RIGHT, KEY_DOWN):
+            dx = (key == KEY_RIGHT) - (key == KEY_LEFT)
+            dy = (key == KEY_DOWN) - (key == KEY_UP)
             self.left = max(0, min(
                 self.columns - self.visible_x,
-                self.left + (key == 65363) * 4 - (key == 65361) * 4,
+                self.left + dx * PAN_STEP,
             ))
             self.top = max(0, min(
                 self.rows - self.visible_y,
-                self.top + (key == 65364) * 4 - (key == 65362) * 4,
+                self.top + dy * PAN_STEP,
             ))
         else:
             return

@@ -11,24 +11,20 @@ also saved as hexadecimal wall masks with the shortest solution.
 
 ## Instructions
 
-Use Python 3.10 or later and GNU Make. To open the MLX window, use
-an x86-64 Ubuntu or Fedora desktop with X11 and Vulkan. Ubuntu with
-WSLg also works. From a fresh checkout, run:
+Use Python 3.10 or later, pip 22.3 or later, and GNU Make. For the MLX
+window, use x86-64 Ubuntu with X11 and Vulkan or Ubuntu with WSLg.
+From a fresh checkout, run:
 
 ```sh
 make install
 make run
 ```
 
-The MIT-licensed MLX 2.2 wheels are in `vendor/mlx`. The installer
-automatically selects the distribution and uses the project-local
-`.venv`. If the XCB keysyms library is missing, it downloads and extracts
-the distribution package into that environment. Installation uses no
-`sudo`. The download needs repository access, and the desktop must
-already provide the remaining graphics libraries and a Vulkan driver.
-Fedora downloads need DNF's download command, rpmkeys, rpm2cpio and cpio.
-You can override the wheel selection with `MLX_DISTRO=ubuntu` or
-`MLX_DISTRO=fedora`, or use `MLX_BUNDLE="/path/to/mlx-2.2.tgz"`.
+The Ubuntu MLX 2.2 wheel is in `vendor/mlx/ubuntu`. Pip installs it
+in the project-local `.venv`. If `libxcb-keysyms1` is missing, the
+setup downloads the Ubuntu package and extracts the library into
+the same environment without `sudo`. The desktop must already
+provide the other graphics libraries and a Vulkan driver.
 
 The application takes one argument. Activate the environment with
 `. .venv/bin/activate` to run `python3 a_maze_ing.py config.txt` directly.
@@ -36,8 +32,8 @@ Use `make run CONFIG=other.txt` to try another file. On a machine without a
 graphical desktop, set `DISPLAY=NONE` in the config and run
 `python3 a_maze_ing.py config.txt` with system Python.
 
-`make install-dev` downloads the development tools into the same
-environment; `make lint`, `make lint-strict` and `make package` also
+`make install-dev` installs the development tools in the same
+environment. `make lint`, `make lint-strict` and `make package` also
 install them on demand. `make debug` starts PDB and `make clean` removes
 caches and build directories.
 
