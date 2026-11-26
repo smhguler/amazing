@@ -1,0 +1,22 @@
+# File that tells Git which files to ignore
+
+# Virtual environment
+venv/
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# Mypy cache
+.mypy_cache/
+mlx-2.2.tgz
+mlx-*.whl
+!vendor/mlx/*/mlx-2.2-py3-none-any.whl
+
+# macOS system files
+.DS_Store
