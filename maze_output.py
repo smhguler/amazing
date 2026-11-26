@@ -2,7 +2,6 @@
 
 from pathlib import Path
 import re
-from tempfile import NamedTemporaryFile
 
 from mazegen import Maze
 
@@ -15,24 +14,14 @@ def write_maze(maze: Maze, destination: Path) -> None:
         raise ValueError("The output cannot be a symbolic link.")
     if destination.exists() and not _is_maze_file(destination):
         raise ValueError(f"Refusing to replace {destination.name!r}.")
-    temporary: Path | None = None
-    try:
-        with NamedTemporaryFile(
-            "w", encoding="ascii", newline="\n",
-            dir=destination.parent, delete=False,
-        ) as output:
-            temporary = Path(output.name)
-            for row in maze.walls:
-                output.write("".join(format(cell, "X") for cell in row))
-                output.write("\n")
+    with destination.open("w", encoding="ascii", newline="\n") as output:
+        for row in maze.walls:
+            output.write("".join(format(cell, "X") for cell in row))
             output.write("\n")
-            output.write(f"{maze.entry[0]},{maze.entry[1]}\n")
-            output.write(f"{maze.exit[0]},{maze.exit[1]}\n")
-            output.write(maze.solution + "\n")
-        temporary.replace(destination)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+        output.write("\n")
+        output.write(f"{maze.entry[0]},{maze.entry[1]}\n")
+        output.write(f"{maze.exit[0]},{maze.exit[1]}\n")
+        output.write(maze.solution + "\n")
 
 
 def _is_maze_file(path: Path) -> bool:
